@@ -11,7 +11,7 @@ Gem::Specification.new do |spec|
 
   spec.summary       = "Use JSON Editor with Rails 4+"
   spec.description   = "This gem provides JSON Editor for your Rails 4+ application."
-  spec.homepage      = "TODO: Put your gem's website or public repo URL here."
+  spec.homepage      = "https://github.com/javierjulio/jsoneditor-rails"
   spec.license       = "MIT"
 
   spec.files         = `git ls-files -z`.split("\x0").reject do |f|
