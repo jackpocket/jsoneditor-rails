@@ -1,0 +1,1 @@
+require 'jsoneditor/rails'
