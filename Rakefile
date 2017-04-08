@@ -10,7 +10,7 @@ end
 task :default => :test
 
 desc "Update JSON Editor version"
-task :update_json_editor
+task :update_json_editor do
   dist_url = "https://raw.githubusercontent.com/josdejong/jsoneditor/master/dist/"
 
   puts "Downloading jsoneditor.js"
