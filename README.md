@@ -20,12 +20,12 @@ Or install it yourself as:
 
 ## Usage
 
-The jsoneditor files will be added to the asset pipeline and available for you to use. In your `app/assets/javascripts/application.js` add:
+In your `app/assets/javascripts/application.js` add:
 
 ```js
 //= require jsoneditor
 
-// Or add the minimalist version if you prefer that
+// Or use the minimalist version instead
 //= require jsoneditor-minimalist
 ```
 
@@ -39,8 +39,8 @@ Then add the JSON Editor CSS to your `app/assets/stylesheets/application.scss`:
 
 * `git clone https://github.com/javierjulio/jsoneditor-rails.git`
 * `bundle install`
-
-To update the vendor assets with the latest version run `rake update_json_editor` and create a pull request with those changes.
+* `rake update_json_editor_assets`
+* Create pull request with latest changes
 
 ## Contributing
 
