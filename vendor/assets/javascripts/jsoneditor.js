@@ -24,8 +24,8 @@
  * Copyright (c) 2011-2017 Jos de Jong, http://jsoneditoronline.org
  *
  * @author  Jos de Jong, <wjosdejong@gmail.com>
- * @version 5.24.6
- * @date    2018-09-12
+ * @version 5.26.2
+ * @date    2018-11-13
  */
 (function webpackUniversalModuleDefinition(root, factory) {
 	if(typeof exports === 'object' && typeof module === 'object')
@@ -252,7 +252,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	  'colorPicker', 'onColorPicker',
 	  'timestampTag',
 	  'escapeUnicode', 'history', 'search', 'mode', 'modes', 'name', 'indentation',
-	  'sortObjectKeys', 'navigationBar', 'statusBar', 'languages', 'language'
+	  'sortObjectKeys', 'navigationBar', 'statusBar', 'mainMenuBar', 'languages', 'language', 'enableSort', 'enableTransform'
 	];
 
 	/**
@@ -30222,8 +30222,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * @private
 	 */
 	treemode._setOptions = function (options) {
-	  var editor = this;
-
 	  this.options = {
 	    search: true,
 	    history: true,
@@ -30233,6 +30231,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    schemaRefs: null,
 	    autocomplete: null,
 	    navigationBar : true,
+	    mainMenuBar: true,
 	    onSelectionChange: null,
 	    colorPicker: true,
 	    onColorPicker: function (parent, color, onChange) {
@@ -30242,11 +30241,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	          color: color,
 	          popup: 'bottom',
 	          onDone: function (color) {
-	            var alpha = color.rgba[3]
+	            var alpha = color.rgba[3];
 	            var hex = (alpha === 1)
 	                ? color.hex.substr(0, 7)  // return #RRGGBB
-	                : color.hex               // return #RRGGBBAA
-	            onChange(hex)
+	                : color.hex;               // return #RRGGBBAA
+	            onChange(hex);
 	          }
 	        }).show();
 	      }
@@ -30256,7 +30255,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	      }
 	    },
 	    timestampTag: true,
-	    onEvent: null
+	    onEvent: null,
+	    enableSort: true,
+	    enableTransform: true
 	  };
 
 	  // copy all options
@@ -30591,8 +30592,26 @@ return /******/ (function(modules) { // webpackBootstrap
 	    return;
 	  }
 
+	  // selection can be changed after undo/redo
+	  this.selection = this.getDomSelection();
+
 	  // validate JSON schema (if configured)
 	  this._debouncedValidate();
+
+	  if (this.treePath) {
+	    var selectedNode = this.selection
+	        ?  this.node.findNodeByInternalPath(this.selection.path)
+	        : this.multiselection
+	            ? this.multiselection.nodes[0]
+	            : undefined;
+
+	    if (selectedNode) {
+	      this._updateTreePath(selectedNode.getNodePath())
+	    }
+	    else {
+	      this.treePath.reset()
+	    }
+	  }
 
 	  // trigger the onChange callback
 	  if (this.options.onChange) {
@@ -31015,6 +31034,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	  this.frame.className = 'jsoneditor jsoneditor-mode-' + this.options.mode;
 	  this.container.appendChild(this.frame);
 
+	  this.contentOuter = document.createElement('div');
+	  this.contentOuter.className = 'jsoneditor-outer';
+
 	  // create one global event listener to handle all events from all nodes
 	  var editor = this;
 	  function onEvent(event) {
@@ -31053,107 +31075,115 @@ return /******/ (function(modules) { // webpackBootstrap
 	  this.frame.onfocusin = onEvent;  // for IE
 	  this.frame.onfocusout = onEvent; // for IE
 
-	  // create menu
-	  this.menu = document.createElement('div');
-	  this.menu.className = 'jsoneditor-menu';
-	  this.frame.appendChild(this.menu);
+	  if (this.options.mainMenuBar) {
+	    util.addClassName(this.contentOuter, 'has-main-menu-bar');
 
-	  // create expand all button
-	  var expandAll = document.createElement('button');
-	  expandAll.type = 'button';
-	  expandAll.className = 'jsoneditor-expand-all';
-	  expandAll.title = translate('expandAll');
-	  expandAll.onclick = function () {
-	    editor.expandAll();
-	  };
-	  this.menu.appendChild(expandAll);
+	    // create menu
+	    this.menu = document.createElement('div');
+	    this.menu.className = 'jsoneditor-menu';
+	    this.frame.appendChild(this.menu);
 
-	  // create collapse all button
-	  var collapseAll = document.createElement('button');
-	  collapseAll.type = 'button';
-	  collapseAll.title = translate('collapseAll');
-	  collapseAll.className = 'jsoneditor-collapse-all';
-	  collapseAll.onclick = function () {
-	    editor.collapseAll();
-	  };
-	  this.menu.appendChild(collapseAll);
-
-	  // create sort button
-	  var sort = document.createElement('button');
-	  sort.type = 'button';
-	  sort.className = 'jsoneditor-sort';
-	  sort.title = translate('sortTitleShort');
-	  sort.onclick = function () {
-	    var anchor = editor.options.modalAnchor || DEFAULT_MODAL_ANCHOR;
-	    showSortModal(editor.node, anchor)
-	  };
-	  this.menu.appendChild(sort);
-
-	  // create transform button
-	  var transform = document.createElement('button');
-	  transform.type = 'button';
-	  transform.title = translate('transformTitleShort');
-	  transform.className = 'jsoneditor-transform';
-	  transform.onclick = function () {
-	    var anchor = editor.options.modalAnchor || DEFAULT_MODAL_ANCHOR;
-	    showTransformModal(editor.node, anchor)
-	  };
-	  this.menu.appendChild(transform);
-
-	  // create undo/redo buttons
-	  if (this.history) {
-	    // create undo button
-	    var undo = document.createElement('button');
-	    undo.type = 'button';
-	    undo.className = 'jsoneditor-undo jsoneditor-separator';
-	    undo.title = translate('undo');
-	    undo.onclick = function () {
-	      editor._onUndo();
+	    // create expand all button
+	    var expandAll = document.createElement('button');
+	    expandAll.type = 'button';
+	    expandAll.className = 'jsoneditor-expand-all';
+	    expandAll.title = translate('expandAll');
+	    expandAll.onclick = function () {
+	      editor.expandAll();
 	    };
-	    this.menu.appendChild(undo);
-	    this.dom.undo = undo;
+	    this.menu.appendChild(expandAll);
 
-	    // create redo button
-	    var redo = document.createElement('button');
-	    redo.type = 'button';
-	    redo.className = 'jsoneditor-redo';
-	    redo.title = translate('redo');
-	    redo.onclick = function () {
-	      editor._onRedo();
+	    // create collapse all button
+	    var collapseAll = document.createElement('button');
+	    collapseAll.type = 'button';
+	    collapseAll.title = translate('collapseAll');
+	    collapseAll.className = 'jsoneditor-collapse-all';
+	    collapseAll.onclick = function () {
+	      editor.collapseAll();
 	    };
-	    this.menu.appendChild(redo);
-	    this.dom.redo = redo;
+	    this.menu.appendChild(collapseAll);
 
-	    // register handler for onchange of history
-	    this.history.onChange = function () {
-	      undo.disabled = !editor.history.canUndo();
-	      redo.disabled = !editor.history.canRedo();
-	    };
-	    this.history.onChange();
+	    // create sort button
+	    if (this.options.enableSort) {
+	      var sort = document.createElement('button');
+	      sort.type = 'button';
+	      sort.className = 'jsoneditor-sort';
+	      sort.title = translate('sortTitleShort');
+	      sort.onclick = function () {
+	        var anchor = editor.options.modalAnchor || DEFAULT_MODAL_ANCHOR;
+	        showSortModal(editor.node, anchor)
+	      };
+	      this.menu.appendChild(sort);
+	    }
+
+	    // create transform button
+	    if (this.options.enableTransform) {
+	      var transform = document.createElement('button');
+	      transform.type = 'button';
+	      transform.title = translate('transformTitleShort');
+	      transform.className = 'jsoneditor-transform';
+	      transform.onclick = function () {
+	        var anchor = editor.options.modalAnchor || DEFAULT_MODAL_ANCHOR;
+	        showTransformModal(editor.node, anchor)
+	      };
+	      this.menu.appendChild(transform);
+	    }
+
+	    // create undo/redo buttons
+	    if (this.history) {
+	      // create undo button
+	      var undo = document.createElement('button');
+	      undo.type = 'button';
+	      undo.className = 'jsoneditor-undo jsoneditor-separator';
+	      undo.title = translate('undo');
+	      undo.onclick = function () {
+	        editor._onUndo();
+	      };
+	      this.menu.appendChild(undo);
+	      this.dom.undo = undo;
+
+	      // create redo button
+	      var redo = document.createElement('button');
+	      redo.type = 'button';
+	      redo.className = 'jsoneditor-redo';
+	      redo.title = translate('redo');
+	      redo.onclick = function () {
+	        editor._onRedo();
+	      };
+	      this.menu.appendChild(redo);
+	      this.dom.redo = redo;
+
+	      // register handler for onchange of history
+	      this.history.onChange = function () {
+	        undo.disabled = !editor.history.canUndo();
+	        redo.disabled = !editor.history.canRedo();
+	      };
+	      this.history.onChange();
+	    }
+
+	    // create mode box
+	    if (this.options && this.options.modes && this.options.modes.length) {
+	      var me = this;
+	      this.modeSwitcher = new ModeSwitcher(this.menu, this.options.modes, this.options.mode, function onSwitch(mode) {
+	        // switch mode and restore focus
+	        me.setMode(mode);
+	        me.modeSwitcher.focus();
+	      });
+	    }
+
+	    // create search box
+	    if (this.options.search) {
+	      this.searchBox = new SearchBox(this, this.menu);
+	    }
 	  }
 
-	  // create mode box
-	  if (this.options && this.options.modes && this.options.modes.length) {
-	    var me = this;
-	    this.modeSwitcher = new ModeSwitcher(this.menu, this.options.modes, this.options.mode, function onSwitch(mode) {
-	      // switch mode and restore focus
-	      me.setMode(mode);
-	      me.modeSwitcher.focus();
-	    });
-	  }
-
-	  // create search box
-	  if (this.options.search) {
-	    this.searchBox = new SearchBox(this, this.menu);
-	  }
-
-	  if(this.options.navigationBar) {
+	  if (this.options.navigationBar) {
 	    // create second menu row for treepath
 	    this.navBar = document.createElement('div');
 	    this.navBar.className = 'jsoneditor-navigation-bar nav-bar-empty';
 	    this.frame.appendChild(this.navBar);
 
-	    this.treePath = new TreePath(this.navBar);
+	    this.treePath = new TreePath(this.navBar, this.frame);
 	    this.treePath.onSectionSelected(this._onTreePathSectionSelected.bind(this));
 	    this.treePath.onContextMenuItemSelected(this._onTreePathMenuItemSelected.bind(this));
 	  }
@@ -31244,7 +31274,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }
 	  }
 	  else {
-	    if (event.type === 'mousedown') {
+	    // filter mouse events in the contents part of the editor (not the main menu)
+	    if (event.type === 'mousedown' && util.hasParentNode(event.target, this.content)) {
 	      this.deselect();
 
 	      if (node && event.target === node.dom.drag) {
@@ -31278,7 +31309,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        name: getName(node),
 	        node: node,
 	        children: []
-	      }
+	      };
 	      if (node.childs && node.childs.length) {
 	        node.childs.forEach(function (childNode) {
 	          pathObj.children.push({
@@ -31394,6 +31425,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    });
 	  }
 
+	  event.preventDefault();
 	};
 
 	/**
@@ -31441,10 +31473,9 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	/**
 	 * End of multiselect nodes by dragging
-	 * @param event
 	 * @private
 	 */
-	treemode._onMultiSelectEnd = function (event) {
+	treemode._onMultiSelectEnd = function () {
 	  // set focus to the context menu button of the first node
 	  if (this.multiselection.nodes[0]) {
 	    this.multiselection.nodes[0].dom.menu.focus();
@@ -31668,16 +31699,13 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * @private
 	 */
 	treemode._createTable = function () {
-	  var contentOuter = document.createElement('div');
-	  contentOuter.className = 'jsoneditor-outer';
-	  if(this.options.navigationBar) {
-	    util.addClassName(contentOuter, 'has-nav-bar');
+	  if (this.options.navigationBar) {
+	    util.addClassName(this.contentOuter, 'has-nav-bar');
 	  }
-	  this.contentOuter = contentOuter;
 
 	  this.scrollableContent = document.createElement('div');
 	  this.scrollableContent.className = 'jsoneditor-tree';
-	  contentOuter.appendChild(this.scrollableContent);
+	  this.contentOuter.appendChild(this.scrollableContent);
 
 	  // the jsoneditor-tree-inner div with bottom padding is here to
 	  // keep space for the action menu dropdown. It's created as a
@@ -31711,7 +31739,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	  this.tbody = document.createElement('tbody');
 	  this.table.appendChild(this.tbody);
 
-	  this.frame.appendChild(contentOuter);
+	  this.frame.appendChild(this.contentOuter);
 	};
 
 	/**
@@ -31723,7 +31751,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	 */
 	treemode.showContextMenu = function (anchor, onClose) {
 	  var items = [];
-	  var editor = this;
+	  var selectedNodes = this.multiselection.nodes.slice();
 
 	  // create duplicate button
 	  items.push({
@@ -31731,7 +31759,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    title: translate('duplicateTitle'),
 	    className: 'jsoneditor-duplicate',
 	    click: function () {
-	      Node.onDuplicate(editor.multiselection.nodes);
+	      Node.onDuplicate(selectedNodes );
 	    }
 	  });
 
@@ -31741,12 +31769,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	    title: translate('removeTitle'),
 	    className: 'jsoneditor-remove',
 	    click: function () {
-	      Node.onRemove(editor.multiselection.nodes);
+	      Node.onRemove(selectedNodes);
 	    }
 	  });
 
 	  var menu = new ContextMenu(items, {close: onClose});
-	  menu.show(anchor, editor.frame);
+	  menu.show(anchor, this.frame);
 	};
 
 	/**
@@ -31775,12 +31803,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	};
 
 	/**
-	 * Callback registraion for selection change
+	 * Callback registration for selection change
 	 * @param {selectionCallback} callback 
 	 * 
 	 * @callback selectionCallback
-	 * @param {SerializableNode=} start
-	 * @param {SerializableNode=} end
 	 */
 	treemode.onSelectionChange = function (callback) {
 	  if (typeof callback === 'function') {
@@ -31799,7 +31825,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	treemode.setSelection = function (start, end) {
 	  // check for old usage
 	  if (start && start.dom && start.range) {
-	    console.warn('setSelection/getSelection usage for text selection is depracated and should not be used, see documantaion for supported selection options');
+	    console.warn('setSelection/getSelection usage for text selection is deprecated and should not be used, see documentation for supported selection options');
 	    this.setDomSelection(start);
 	  }
 
@@ -31815,7 +31841,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * Returns a set of Nodes according to a range of selection
 	 * @param {{path: Array.<String>}} start object contains the path for range start 
 	 * @param {{path: Array.<String>}=} end object contains the path for range end
-	 * @return {Array.<Node>} Node intances on the given range
+	 * @return {Array.<Node>} Node instances on the given range
 	 * @private
 	 */
 	treemode._getNodeInstancesByRange = function (start, end) {
@@ -33790,6 +33816,25 @@ return /******/ (function(modules) { // webpackBootstrap
 	};
 
 	/**
+	 * Test whether an element has the provided parent node somewhere up the node tree.
+	 * @param {Element} elem
+	 * @param {Element} parent
+	 * @return {boolean}
+	 */
+	exports.hasParentNode = function (elem, parent) {
+	  var e = elem ? elem.parentNode : undefined;
+
+	  while (e) {
+	    if (e === parent) {
+	      return true;
+	    }
+	    e = e.parentNode;
+	  }
+
+	  return false;
+	}
+
+	/**
 	 * Returns the version of Internet Explorer or a -1
 	 * (indicating the use of another browser).
 	 * Source: http://msdn.microsoft.com/en-us/library/ms537509(v=vs.85).aspx
@@ -35356,10 +35401,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	/**
 	 * Creates a component that visualize path selection in tree based editors
 	 * @param {HTMLElement} container 
+	 * @param {HTMLElement} root
 	 * @constructor
 	 */
-	function TreePath(container) {
+	function TreePath(container, root) {
 	  if (container) {
+	    this.root = root;
 	    this.path = document.createElement('div');
 	    this.path.className = 'jsoneditor-treepath';
 	    container.appendChild(this.path);
@@ -35409,10 +35456,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	            });
 	          });
 	          var menu = new ContextMenu(items);
-	          menu.show(sepEl);
+	          menu.show(sepEl, me.root);
 	        };
 
-	        me.path.appendChild(sepEl, me.container);
+	        me.path.appendChild(sepEl);
 	      }
 
 	      if(idx === pathObjs.length - 1) {
@@ -35609,7 +35656,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	/**
 	 * Find child node by serializable path
-	 * @param {Array<String>} path 
+	 * @param {Array<String>} path
 	 */
 	Node.prototype.findNodeByPath = function (path) {
 	  if (!path) {
@@ -35651,7 +35698,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	/**
 	 * @typedef {{value: String|Object|Number|Boolean, path: Array.<String|Number>}} SerializableNode
-	 * 
+	 *
 	 * Returns serializable representation for the node
 	 * @return {SerializableNode}
 	 */
@@ -36861,7 +36908,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        this.childs = [];
 	      }
 
-	      this.childs.forEach(function (child, index) {
+	      this.childs.forEach(function (child) {
 	        child.clearDom();
 	        delete child.index;
 	        child.fieldEditable = true;
@@ -36934,7 +36981,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }
 	  }
 	  else if (this.type === 'object') {
-	    if (typeof json !== 'object') {
+	    if (typeof json !== 'object' || !json) {
 	      return false;
 	    }
 
@@ -37981,7 +38028,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	  //Locating the schema of the node and checking for any enum type
 	  if(this.editor && this.editor.options) {
 	    // find the part of the json schema matching this nodes path
-	    this.schema = this.editor.options.schema 
+	    this.schema = this.editor.options.schema
 	        ? Node._findSchema(this.editor.options.schema, this.getPath())
 	        : null;
 	    if (this.schema) {
@@ -38422,7 +38469,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    };
 	    // For leaf values, include value
 	    if (!this._hasChilds() &&element === this.dom.value) {
-	      info.value = this.getValue();  
+	      info.value = this.getValue();
 	    }
 	    this.editor.options.onEvent(info, event);
 	  }
@@ -38837,7 +38884,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	      }
 	    });
 	  }
-	}
+	};
 
 	/**
 	 * Remove nodes
@@ -39335,7 +39382,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	  }
 
 	  return false;
-	}
+	};
 
 	/**
 	 * Remove the focus of given nodes, and move the focus to the (a) node before,
@@ -39633,25 +39680,29 @@ return /******/ (function(modules) { // webpackBootstrap
 	  }
 
 	  if (this._hasChilds()) {
-	    items.push({
-	      text: translate('sort'),
-	      title: translate('sortTitle', {type: this.type}),
-	      className: 'jsoneditor-sort-asc',
-	      click: function () {
-	        var anchor = node.editor.options.modalAnchor || DEFAULT_MODAL_ANCHOR;
-	        showSortModal(node, anchor)
-	      }
-	    });
+	    if (this.editor.options.enableSort) {
+	      items.push({
+	        text: translate('sort'),
+	        title: translate('sortTitle', {type: this.type}),
+	        className: 'jsoneditor-sort-asc',
+	        click: function () {
+	          var anchor = node.editor.options.modalAnchor || DEFAULT_MODAL_ANCHOR;
+	          showSortModal(node, anchor)
+	        }
+	      });
+	    }
 
-	    items.push({
-	      text: translate('transform'),
-	      title: translate('transformTitle', {type: this.type}),
-	      className: 'jsoneditor-transform',
-	      click: function () {
-	        var anchor = node.editor.options.modalAnchor || DEFAULT_MODAL_ANCHOR;
-	        showTransformModal(node, anchor)
-	      }
-	    });
+	    if (this.editor.options.enableTransform) {
+	      items.push({
+	        text: translate('transform'),
+	        title: translate('transformTitle', {type: this.type}),
+	        className: 'jsoneditor-transform',
+	        click: function () {
+	          var anchor = node.editor.options.modalAnchor || DEFAULT_MODAL_ANCHOR;
+	          showTransformModal(node, anchor)
+	        }
+	      });
+	    }
 	  }
 
 	  if (this.parent && this.parent._hasChilds()) {
@@ -45855,9 +45906,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	  // read options
 	  options = options || {};
 	  
-	  if(typeof options.statusBar === 'undefined') {
+	  if (typeof options.statusBar === 'undefined') {
 	    options.statusBar = true;
 	  }
+
+	  // setting default for textmode
+	  options.mainMenuBar = options.mainMenuBar !== false;
 
 	  this.options = options;
 
@@ -45922,67 +45976,89 @@ return /******/ (function(modules) { // webpackBootstrap
 	  this.frame.onkeydown = function (event) {
 	    me._onKeyDown(event);
 	  };
-	  
-	  // create menu
-	  this.menu = document.createElement('div');
-	  this.menu.className = 'jsoneditor-menu';
-	  this.frame.appendChild(this.menu);
 
-	  // create format button
-	  var buttonFormat = document.createElement('button');
-	  buttonFormat.type = 'button';
-	  buttonFormat.className = 'jsoneditor-format';
-	  buttonFormat.title = 'Format JSON data, with proper indentation and line feeds (Ctrl+\\)';
-	  this.menu.appendChild(buttonFormat);
-	  buttonFormat.onclick = function () {
-	    try {
-	      me.format();
-	      me._onChange();
-	    }
-	    catch (err) {
-	      me._onError(err);
-	    }
-	  };
+	  this.content = document.createElement('div');
+	  this.content.className = 'jsoneditor-outer';
 
-	  // create compact button
-	  var buttonCompact = document.createElement('button');
-	  buttonCompact.type = 'button';
-	  buttonCompact.className = 'jsoneditor-compact';
-	  buttonCompact.title = 'Compact JSON data, remove all whitespaces (Ctrl+Shift+\\)';
-	  this.menu.appendChild(buttonCompact);
-	  buttonCompact.onclick = function () {
-	    try {
-	      me.compact();
-	      me._onChange();
-	    }
-	    catch (err) {
-	      me._onError(err);
-	    }
-	  };
+	  if (this.options.mainMenuBar) {
+	    util.addClassName(this.content, 'has-main-menu-bar');
 
-	  // create repair button
-	  var buttonRepair = document.createElement('button');
-	  buttonRepair.type = 'button';
-	  buttonRepair.className = 'jsoneditor-repair';
-	  buttonRepair.title = 'Repair JSON: fix quotes and escape characters, remove comments and JSONP notation, turn JavaScript objects into JSON.';
-	  this.menu.appendChild(buttonRepair);
-	  buttonRepair.onclick = function () {
-	    try {
-	      me.repair();
-	      me._onChange();
-	    }
-	    catch (err) {
-	      me._onError(err);
-	    }
-	  };
+	    // create menu
+	    this.menu = document.createElement('div');
+	    this.menu.className = 'jsoneditor-menu';
+	    this.frame.appendChild(this.menu);
 
-	  // create mode box
-	  if (this.options && this.options.modes && this.options.modes.length) {
-	    this.modeSwitcher = new ModeSwitcher(this.menu, this.options.modes, this.options.mode, function onSwitch(mode) {
-	      // switch mode and restore focus
-	      me.setMode(mode);
-	      me.modeSwitcher.focus();
-	    });
+	    // create format button
+	    var buttonFormat = document.createElement('button');
+	    buttonFormat.type = 'button';
+	    buttonFormat.className = 'jsoneditor-format';
+	    buttonFormat.title = 'Format JSON data, with proper indentation and line feeds (Ctrl+\\)';
+	    this.menu.appendChild(buttonFormat);
+	    buttonFormat.onclick = function () {
+	      try {
+	        me.format();
+	        me._onChange();
+	      }
+	      catch (err) {
+	        me._onError(err);
+	      }
+	    };
+
+	    // create compact button
+	    var buttonCompact = document.createElement('button');
+	    buttonCompact.type = 'button';
+	    buttonCompact.className = 'jsoneditor-compact';
+	    buttonCompact.title = 'Compact JSON data, remove all whitespaces (Ctrl+Shift+\\)';
+	    this.menu.appendChild(buttonCompact);
+	    buttonCompact.onclick = function () {
+	      try {
+	        me.compact();
+	        me._onChange();
+	      }
+	      catch (err) {
+	        me._onError(err);
+	      }
+	    };
+
+	    // create repair button
+	    var buttonRepair = document.createElement('button');
+	    buttonRepair.type = 'button';
+	    buttonRepair.className = 'jsoneditor-repair';
+	    buttonRepair.title = 'Repair JSON: fix quotes and escape characters, remove comments and JSONP notation, turn JavaScript objects into JSON.';
+	    this.menu.appendChild(buttonRepair);
+	    buttonRepair.onclick = function () {
+	      try {
+	        me.repair();
+	        me._onChange();
+	      }
+	      catch (err) {
+	        me._onError(err);
+	      }
+	    };
+
+	    // create mode box
+	    if (this.options && this.options.modes && this.options.modes.length) {
+	      this.modeSwitcher = new ModeSwitcher(this.menu, this.options.modes, this.options.mode, function onSwitch(mode) {
+	        // switch mode and restore focus
+	        me.setMode(mode);
+	        me.modeSwitcher.focus();
+	      });
+	    }
+
+	    if (this.mode == 'code') {
+	      var poweredBy = document.createElement('a');
+	      poweredBy.appendChild(document.createTextNode('powered by ace'));
+	      poweredBy.href = 'http://ace.ajax.org';
+	      poweredBy.target = '_blank';
+	      poweredBy.className = 'jsoneditor-poweredBy';
+	      poweredBy.onclick = function () {
+	        // TODO: this anchor falls below the margin of the content,
+	        // therefore the normal a.href does not work. We use a click event
+	        // for now, but this should be fixed.
+	        window.open(poweredBy.href, poweredBy.target);
+	      };
+	      this.menu.appendChild(poweredBy);
+	    }
 	  }
 
 	  var emptyNode = {};
@@ -45990,10 +46066,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	  && typeof(this.options.onEditable === 'function')
 	  && !this.options.onEditable(emptyNode));
 
-	  this.content = document.createElement('div');
-	  this.content.className = 'jsoneditor-outer';
 	  this.frame.appendChild(this.content);
-
 	  this.container.appendChild(this.frame);
 
 	  if (this.mode == 'code') {
@@ -46038,19 +46111,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	      });
 	    }
 
-	    var poweredBy = document.createElement('a');
-	    poweredBy.appendChild(document.createTextNode('powered by ace'));
-	    poweredBy.href = 'http://ace.ajax.org';
-	    poweredBy.target = '_blank';
-	    poweredBy.className = 'jsoneditor-poweredBy';
-	    poweredBy.onclick = function () {
-	      // TODO: this anchor falls below the margin of the content,
-	      // therefore the normal a.href does not work. We use a click event
-	      // for now, but this should be fixed.
-	      window.open(poweredBy.href, poweredBy.target);
-	    };
-	    this.menu.appendChild(poweredBy);
-
 	    // register onchange event
 	    aceEditor.on('change', this._onChange.bind(this));
 	    aceEditor.on('changeSelection', this._onSelect.bind(this));
@@ -46083,12 +46143,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	  this.dom.validationErrorsContainer = validationErrorsContainer;
 	  this.frame.appendChild(validationErrorsContainer);
 
-	  var additinalErrorsIndication = document.createElement('div');
-	  additinalErrorsIndication.style.display = 'none';
-	  additinalErrorsIndication.className = "jsoneditor-additional-errors fadein";
-	  additinalErrorsIndication.innerHTML = "Scroll for more &#9663;";
-	  this.dom.additinalErrorsIndication = additinalErrorsIndication;
-	  validationErrorsContainer.appendChild(additinalErrorsIndication);
+	  var additionalErrorsIndication = document.createElement('div');
+	  additionalErrorsIndication.style.display = 'none';
+	  additionalErrorsIndication.className = "jsoneditor-additional-errors fadein";
+	  additionalErrorsIndication.innerHTML = "Scroll for more &#9663;";
+	  this.dom.additionalErrorsIndication = additionalErrorsIndication;
+	  validationErrorsContainer.appendChild(additionalErrorsIndication);
 
 	  if (options.statusBar) {
 	    util.addClassName(this.content, 'has-status-bar');
@@ -46242,20 +46302,18 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	/**
 	 * Event handler for mousedown.
-	 * @param {Event} event
 	 * @private
 	 */
-	textmode._onMouseDown = function (event) {
+	textmode._onMouseDown = function () {
 	  this._updateCursorInfo();
 	  this._emitSelectionChange();
 	};
 
 	/**
 	 * Event handler for blur.
-	 * @param {Event} event
 	 * @private
 	 */
-	textmode._onBlur = function (event) {
+	textmode._onBlur = function () {
 	  var me = this;
 	  // this allows to avoid blur when clicking inner elements (like the errors panel)
 	  // just make sure to set the isFocused to true on the inner element onclick callback
@@ -46295,7 +46353,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        line: line,
 	        column: col,
 	        count: count
-	      }
+	      };
 
 	      if(me.options.statusBar) {
 	        updateDisplay();
@@ -46314,7 +46372,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	      line: line,
 	      column: col,
 	      count: count
-	    }
+	    };
 
 	    if(this.options.statusBar) {
 	      updateDisplay();
@@ -46342,11 +46400,22 @@ return /******/ (function(modules) { // webpackBootstrap
 	    var currentSelection = this.getTextSelection();
 	    this._selectionChangedHandler(currentSelection.start, currentSelection.end, currentSelection.text);
 	  }
-	}
+	};
 
-	textmode._refreshAnnotations = function () {
-	  this.aceEditor && this.aceEditor.getSession().setAnnotations();  
-	}
+	/**
+	 * refresh ERROR annotations state
+	 * error annotations are handled by the ace json mode (ace/mode/json)
+	 * validation annotations are handled by this mode
+	 * therefore in order to refresh we send only the annotations of error type in order to maintain its state 
+	 * @private
+	 */
+	textmode._refreshAnnotations = function () {  
+	  var session = this.aceEditor && this.aceEditor.getSession();
+	  if (session) {
+	    var errEnnotations = session.getAnnotations().filter(function(annotation) {return annotation.type === 'error' });
+	    session.setAnnotations(errEnnotations);
+	  }
+	};
 
 	/**
 	 * Destroy the editor. Clean up DOM, event listeners, and web workers.
@@ -46528,19 +46597,25 @@ return /******/ (function(modules) { // webpackBootstrap
 	  var json;
 	  try {
 	    json = this.get(); // this can fail when there is no valid json
-	    this.parseErrorIndication.style.display = 'none';
+	    if (this.parseErrorIndication) {
+	      this.parseErrorIndication.style.display = 'none';
+	    }
 	    doValidate = true;
 	  }
 	  catch (err) {
 	    if (this.getText()) {
-	      this.parseErrorIndication.style.display = 'block';
+	      if (this.parseErrorIndication) {
+	        this.parseErrorIndication.style.display = 'block';
+	      }
 	      // try to extract the line number from the jsonlint error message
 	      var match = /\w*line\s*(\d+)\w*/g.exec(err.message);
 	      var line;
 	      if (match) {
 	        line = +match[1];
 	      }
-	      this.parseErrorIndication.title = !isNaN(line) ? ('parse error on line ' + line) : 'parse error - check that the json is valid';
+	      if (this.parseErrorIndication) {
+	        this.parseErrorIndication.title = !isNaN(line) ? ('parse error on line ' + line) : 'parse error - check that the json is valid';
+	      }
 	      parseErrors.push({
 	        type: 'error',
 	        message: err.message.replace(/\n/g, '<br>'),
@@ -46645,7 +46720,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	  if (this.dom.validationErrors) {
 	    this.dom.validationErrors.parentNode.removeChild(this.dom.validationErrors);
 	    this.dom.validationErrors = null;
-	    this.dom.additinalErrorsIndication.style.display = 'none';
+	    this.dom.additionalErrorsIndication.style.display = 'none';
 
 	    this.content.style.marginBottom = '';
 	    this.content.style.paddingBottom = '';
@@ -46730,12 +46805,12 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	      this.dom.validationErrors = validationErrors;
 	      this.dom.validationErrorsContainer.appendChild(validationErrors);
-	      this.dom.additinalErrorsIndication.title = errors.length + " errors total";
+	      this.dom.additionalErrorsIndication.title = errors.length + " errors total";
 
 	      if (this.dom.validationErrorsContainer.clientHeight < this.dom.validationErrorsContainer.scrollHeight) {
-	        this.dom.additinalErrorsIndication.style.display = 'block';
+	        this.dom.additionalErrorsIndication.style.display = 'block';
 	        this.dom.validationErrorsContainer.onscroll = function () {
-	          me.dom.additinalErrorsIndication.style.display = 
+	          me.dom.additionalErrorsIndication.style.display =
 	            (me.dom.validationErrorsContainer.clientHeight > 0 && me.dom.validationErrorsContainer.scrollTop === 0) ? 'block' : 'none';
 	        }
 	      } else {
@@ -46824,13 +46899,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	};
 
 	/**
-	 * Callback registraion for selection change
+	 * Callback registration for selection change
 	 * @param {selectionCallback} callback
 	 * 
 	 * @callback selectionCallback
-	 * @param {{row:Number, column:Number}} startPos selection start position
-	 * @param {{row:Number, column:Number}} endPos selected end position
-	 * @param {String} text selected text
 	 */
 	textmode.onTextSelectionChange = function (callback) {
 	  if (typeof callback === 'function') {
