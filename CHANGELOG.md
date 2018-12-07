@@ -1,3 +1,7 @@
+## 1.0.3 (2018-12-07)
+
+* Updated jsoneditor to version 5.26.3 ([#5](../../pull/5))
+
 ## 1.0.2 (2018-09-14)
 
 * Updated jsoneditor to version 5.24.6 ([#4](../../pull/4))
