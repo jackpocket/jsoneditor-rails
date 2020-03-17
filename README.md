@@ -39,7 +39,7 @@ Then add the JSON Editor CSS to your `app/assets/stylesheets/application.scss`:
 
 * `git clone https://github.com/javierjulio/jsoneditor-rails.git`
 * `bundle install`
-* `rake update_json_editor_assets`
+* `rake update_assets`
 * Create pull request with latest changes
 
 ## Contributing
