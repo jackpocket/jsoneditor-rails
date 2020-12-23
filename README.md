@@ -37,14 +37,14 @@ Then add the JSON Editor CSS to your `app/assets/stylesheets/application.scss`:
 
 ## Development
 
-* `git clone https://github.com/javierjulio/jsoneditor-rails.git`
+* `git clone https://github.com/jackpocket/jsoneditor-rails.git`
 * `bundle install`
 * `rake update_assets`
 * Create pull request with latest changes
 
 ## Contributing
 
-Bug reports and pull requests are welcome on GitHub at https://github.com/javierjulio/jsoneditor-rails. This project is intended to be a safe, welcoming space for collaboration, and contributors are expected to adhere to the [Contributor Covenant](http://contributor-covenant.org) code of conduct.
+Bug reports and pull requests are welcome on GitHub at https://github.com/jackpocket/jsoneditor-rails. This project is intended to be a safe, welcoming space for collaboration, and contributors are expected to adhere to the [Contributor Covenant](http://contributor-covenant.org) code of conduct.
 
 ## License
 
