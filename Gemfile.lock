@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    jsoneditor-rails (1.0.3)
+    jsoneditor-rails (1.0.4)
       railties (>= 3.0)
 
 GEM
@@ -78,4 +78,4 @@ DEPENDENCIES
   rake
 
 BUNDLED WITH
-   2.0.2
+   2.1.4
