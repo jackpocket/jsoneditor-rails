@@ -77,7 +77,6 @@ DEPENDENCIES
   jsoneditor-rails!
   minitest
   minitest-reporters
-  railties (= 6.1.5)
   rake
 
 BUNDLED WITH
