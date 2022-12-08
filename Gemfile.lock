@@ -44,10 +44,10 @@ GEM
       builder
       minitest (>= 5.0)
       ruby-progressbar
-    nokogiri (1.13.9)
+    nokogiri (1.13.10)
       mini_portile2 (~> 2.8.0)
       racc (~> 1.4)
-    racc (1.6.0)
+    racc (1.6.1)
     rack (2.2.3.1)
     rack-test (1.1.0)
       rack (>= 1.0, < 3)
