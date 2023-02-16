@@ -73,7 +73,7 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
-  bundler (~> 2.0)
+  bundler
   jsoneditor-rails!
   minitest
   minitest-reporters
