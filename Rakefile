@@ -10,7 +10,7 @@ end
 task default: :test
 
 # Use https://cdnjs.com/libraries/jsoneditor to view all files.
-DIST_URL = "https://cdnjs.cloudflare.com/ajax/libs/jsoneditor/8.6.1/"
+DIST_URL = "https://cdnjs.cloudflare.com/ajax/libs/jsoneditor/9.10.2/"
 
 ASSETS_PATH = ENV['ASSETS_PATH'] || 'vendor/assets/'
 
@@ -25,7 +25,7 @@ end
 
 def use_asset_url_for_css_images
   path = "#{ASSETS_PATH}stylesheets/jsoneditor.scss"
-  modified_css = File.read(path).gsub(/url\("img\//, 'asset-url("')
+  modified_css = File.read(path).gsub(/url\("\.\/img\//, 'asset-url("')
   File.open(path, 'w') { |f| f.write(modified_css) }
 end
 
