@@ -26,7 +26,7 @@ class Jsoneditor::TasksTest < Minitest::Test
 
     css = File.read(File.expand_path("test/dummy_assets/stylesheets/jsoneditor.scss"))
     assert_match(/:{1}\s?asset-url\("/, css)
-    refute_match(/:{1}\s?url\("img\//, css)
+    refute_match(/:{1}\s?url\("\.\/img\//, css)
   end
 
 end
