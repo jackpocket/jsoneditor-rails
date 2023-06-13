@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    jsoneditor-rails (1.0.4)
+    jsoneditor-rails (2.0.0)
       railties (>= 3.0)
 
 GEM

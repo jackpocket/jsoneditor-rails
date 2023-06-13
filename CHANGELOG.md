@@ -1,3 +1,7 @@
+## 2.0.0 (2023-06-13)
+
+* Updated jsoneditor to version 9.10.2 ([#81](../../pull/81))
+
 ## 1.0.4 (2020-12-23)
 
 * No code changes - moved repository to Jackpocket organization and updated URLs
