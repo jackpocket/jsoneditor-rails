@@ -7,22 +7,22 @@ PATH
 GEM
   remote: https://rubygems.org/
   specs:
-    actionpack (7.1.0)
-      actionview (= 7.1.0)
-      activesupport (= 7.1.0)
+    actionpack (7.1.1)
+      actionview (= 7.1.1)
+      activesupport (= 7.1.1)
       nokogiri (>= 1.8.5)
       rack (>= 2.2.4)
       rack-session (>= 1.0.1)
       rack-test (>= 0.6.3)
       rails-dom-testing (~> 2.2)
       rails-html-sanitizer (~> 1.6)
-    actionview (7.1.0)
-      activesupport (= 7.1.0)
+    actionview (7.1.1)
+      activesupport (= 7.1.1)
       builder (~> 3.1)
       erubi (~> 1.11)
       rails-dom-testing (~> 2.2)
       rails-html-sanitizer (~> 1.6)
-    activesupport (7.1.0)
+    activesupport (7.1.1)
       base64
       bigdecimal
       concurrent-ruby (~> 1.0, >= 1.0.2)
@@ -48,7 +48,7 @@ GEM
     irb (1.8.1)
       rdoc
       reline (>= 0.3.8)
-    loofah (2.21.3)
+    loofah (2.21.4)
       crass (~> 1.0.2)
       nokogiri (>= 1.12.0)
     mini_portile2 (2.8.4)
@@ -62,7 +62,7 @@ GEM
     nokogiri (1.15.4)
       mini_portile2 (~> 2.8.2)
       racc (~> 1.4)
-    psych (5.1.0)
+    psych (5.1.1)
       stringio
     racc (1.7.1)
     rack (3.0.8)
@@ -80,9 +80,9 @@ GEM
     rails-html-sanitizer (1.6.0)
       loofah (~> 2.21)
       nokogiri (~> 1.14)
-    railties (7.1.0)
-      actionpack (= 7.1.0)
-      activesupport (= 7.1.0)
+    railties (7.1.1)
+      actionpack (= 7.1.1)
+      activesupport (= 7.1.1)
       irb
       rackup (>= 1.0.0)
       rake (>= 12.2)
