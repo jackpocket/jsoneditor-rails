@@ -1,18 +1,15 @@
-# coding: utf-8
-lib = File.expand_path('../lib', __FILE__)
-$LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
-require 'jsoneditor/rails/version'
+require_relative "lib/jsoneditor/rails/version"
 
 Gem::Specification.new do |spec|
-  spec.name          = "jsoneditor-rails"
-  spec.version       = Jsoneditor::Rails::VERSION
-  spec.authors       = ["Javier Julio"]
-  spec.email         = ["javier@jackpocket.com"]
+  spec.name = "jsoneditor-rails"
+  spec.version = Jsoneditor::Rails::VERSION
+  spec.authors = ["Javier Julio"]
+  spec.email = ["javier@jackpocket.com"]
 
-  spec.summary       = "Use JSON Editor with Rails 4+"
-  spec.description   = "This gem provides JSON Editor for your Rails 4+ application."
-  spec.homepage      = "https://github.com/jackpocket/jsoneditor-rails"
-  spec.license       = "MIT"
+  spec.summary = "Use JSON Editor with Rails 4+"
+  spec.description = "This gem provides JSON Editor for your Rails 4+ application."
+  spec.homepage = "https://github.com/jackpocket/jsoneditor-rails"
+  spec.license = "MIT"
 
   spec.files         = `git ls-files -z`.split("\x0").reject do |f|
     f.match(%r{^(test|spec|features)/})
