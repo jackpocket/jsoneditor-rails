@@ -1,7 +1,6 @@
 # jsoneditor-rails
 
 [![Gem Version](https://badge.fury.io/rb/jsoneditor-rails.svg)](https://badge.fury.io/rb/jsoneditor-rails)
-![CI Build](https://github.com/jackpocket/jsoneditor-rails/workflows/CI%20Build/badge.svg)
 
 This gem packages the [JSON Editor](https://github.com/josdejong/jsoneditor) assets (JavaScripts, stylesheets, and images) for the Rails asset pipeline, so you don't have to download a package.
 
