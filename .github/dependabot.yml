@@ -6,15 +6,15 @@ updates:
       interval: daily
       time: "08:30"
       timezone: America/New_York
-    open-pull-requests-limit: 99
+    open-pull-requests-limit: 10
     reviewers:
-    - javierjulio
+      - javierjulio
   - package-ecosystem: github-actions
     directory: "/"
     schedule:
       interval: daily
       time: "08:30"
       timezone: America/New_York
-    open-pull-requests-limit: 99
+    open-pull-requests-limit: 10
     reviewers:
-    - javierjulio
+      - javierjulio
