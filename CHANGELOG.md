@@ -1,3 +1,8 @@
+## 2.1.0 (2024-07-31)
+
+* Updated jsoneditor to version 9.10.5 ([#118](../../pull/118))
+* Only package essential files in gem release ([#117](../../pull/117))
+
 ## 2.0.0 (2023-06-13)
 
 * Updated jsoneditor to version 9.10.2 ([#81](../../pull/81))
