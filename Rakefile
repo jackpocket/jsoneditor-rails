@@ -10,7 +10,7 @@ end
 task default: :test
 
 # Use https://cdnjs.com/libraries/jsoneditor to view all files.
-DIST_URL = "https://cdnjs.cloudflare.com/ajax/libs/jsoneditor/9.10.2/"
+DIST_URL = "https://cdnjs.cloudflare.com/ajax/libs/jsoneditor/9.10.5/"
 
 ASSETS_PATH = ENV['ASSETS_PATH'] || 'vendor/assets/'
 
